@@ -27,8 +27,7 @@
         // Global variables for Firebase access
         window.db = db;
         window.auth = auth;
-        window.currentUserId = null;
-        window.currentAppId = appId;
+        window.currentAppId = appId; // currentUserId removed
         
         // --- Authentication Initialization ---
 
@@ -44,9 +43,6 @@
                 await new Promise(resolve => {
                     const unsubscribe = onAuthStateChanged(auth, async (user) => {
                         if (user) {
-                            window.currentUserId = user.uid;
-                            // Display the user ID for transparency
-                            document.getElementById('user-id-display').textContent = user.uid; 
                             console.log("User authenticated with UID:", user.uid);
                             
                             // Now that auth is ready, start the main app logic
@@ -144,13 +140,7 @@
         <!-- Main Content Wrapper -->
         <div id="content-wrapper">
 
-            <!-- User ID Display (Remains for Auth Transparency) -->
-            <div class="mb-8 p-4 border border-2 border-indigo-200 dark:border-indigo-700 rounded-lg text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    User ID: <span id="user-id-display" class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded break-all">Loading...</span> 
-                    (Authentication Status)
-                </p>
-            </div>
+            <!-- The User ID Display block has been removed -->
             
             <!-- Divider -->
             <hr class="border-gray-200 dark:border-gray-700 my-8">
