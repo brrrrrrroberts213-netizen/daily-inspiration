@@ -1,2 +1,2 @@
-# daily-stoic-wisdom
-A daily stoic quote app powered by Gemini API.
+# daily_inspiration
+A daily quote app powered by Gemini API.
