@@ -8,7 +8,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- MANDATORY Firebase Initialization ---
@@ -29,19 +29,11 @@
         window.auth = auth;
         window.currentUserId = null;
         window.currentAppId = appId;
-        window.userProfile = null; // Stores loaded profile data
-
-        // Global document elements references
-        window.profileForm = null;
-        window.profileNameInput = null;
-        window.profileAgeInput = null;
-        window.profileCareerInput = null;
-        window.profileStatus = null;
         
-        // --- Authentication and Profile Loading ---
+        // --- Authentication Initialization ---
 
         /**
-         * Signs in the user, handles auth state, and triggers profile load.
+         * Signs in the user and handles auth state.
          */
         async function initializeAuthAndDatabase() {
             try {
@@ -53,9 +45,16 @@
                     const unsubscribe = onAuthStateChanged(auth, async (user) => {
                         if (user) {
                             window.currentUserId = user.uid;
-                            document.getElementById('user-id-display').textContent = user.uid;
+                            // Display the user ID for transparency
+                            document.getElementById('user-id-display').textContent = user.uid; 
                             console.log("User authenticated with UID:", user.uid);
-                            await loadUserProfile(user.uid);
+                            
+                            // Now that auth is ready, start the main app logic
+                            if (window.initMainApp) {
+                                window.initMainApp();
+                            } else {
+                                console.error("window.initMainApp is not yet defined.");
+                            }
                             resolve();
                         } else {
                             // If no user, sign in anonymously or with custom token
@@ -73,117 +72,17 @@
                 });
 
             } catch (error) {
-                console.error("Firebase Auth or Firestore initialization error:", error);
+                console.error("Firebase Auth initialization error:", error);
+                // Simple error display since the profile status is gone
                 document.getElementById('error-message').textContent = `Firebase Setup Error: ${error.message}`;
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('error-state').classList.remove('hidden');
             }
         }
-
-        /**
-         * Loads the user profile from Firestore.
-         * @param {string} userId - The authenticated user's ID.
-         */
-        async function loadUserProfile(userId) {
-            // Path: /artifacts/{appId}/users/{userId}/profile/data
-            const profileRef = doc(db, "artifacts", window.currentAppId, "users", userId, "profile", "data");
-            
-            try {
-                const docSnap = await getDoc(profileRef);
-                if (docSnap.exists()) {
-                    window.userProfile = docSnap.data();
-                    console.log("Profile loaded:", window.userProfile);
-                    // Populate form fields with loaded data
-                    window.profileNameInput.value = window.userProfile.firstName || '';
-                    window.profileAgeInput.value = window.userProfile.age || '';
-                    window.profileCareerInput.value = window.userProfile.careerField || '';
-                    window.profileStatus.textContent = 'Profile Loaded';
-                    window.profileStatus.classList.remove('text-yellow-600', 'text-red-600');
-                    window.profileStatus.classList.add('text-green-600');
-                } else {
-                    console.log("No profile found, initializing empty profile.");
-                    window.userProfile = null;
-                    window.profileStatus.textContent = 'No Profile Set';
-                    window.profileStatus.classList.add('text-yellow-600');
-                }
-            } catch (error) {
-                console.error("Error loading profile:", error);
-                window.profileStatus.textContent = 'Error Loading Profile';
-                window.profileStatus.classList.add('text-red-600');
-            }
-
-            // After auth and profile are ready, start the main app logic
-            // FIX: Call the global version of initMainApp defined in the second script
-            if (window.initMainApp) {
-                window.initMainApp();
-            } else {
-                console.error("window.initMainApp is not yet defined.");
-            }
-        }
-
-        /**
-         * Saves the user profile to Firestore.
-         * @param {Event} event - The form submit event.
-         */
-        window.saveUserProfile = async function (event) {
-            event.preventDefault();
-            
-            const firstName = window.profileNameInput.value.trim();
-            const age = parseInt(window.profileAgeInput.value.trim(), 10);
-            const careerField = window.profileCareerInput.value.trim();
-
-            if (!window.currentUserId) {
-                window.profileStatus.textContent = 'Error: Not Authenticated';
-                window.profileStatus.classList.add('text-red-600');
-                return;
-            }
-
-            // Simple validation
-            if (!firstName || isNaN(age) || age < 1 || !careerField) {
-                 window.profileStatus.textContent = 'Please fill all fields with valid data.';
-                 window.profileStatus.classList.add('text-red-600');
-                 return;
-            }
-
-            const profileData = { firstName, age, careerField, lastUpdated: new Date().toISOString() };
-            const profileRef = doc(db, "artifacts", window.currentAppId, "users", window.currentUserId, "profile", "data");
-
-            try {
-                await setDoc(profileRef, profileData);
-                window.userProfile = profileData;
-                window.profileStatus.textContent = 'Profile Saved Successfully! Reloading Wisdom...';
-                window.profileStatus.classList.remove('text-red-600', 'text-yellow-600');
-                window.profileStatus.classList.add('text-green-600');
-                
-                // Re-run the summary generation with the new profile data using the current tab
-                if (window.generateDailyContent) {
-                    await window.generateDailyContent(window.currentTab); 
-                } else {
-                    console.error("window.generateDailyContent is not yet defined.");
-                }
-
-            } catch (error) {
-                console.error("Error saving profile:", error);
-                window.profileStatus.textContent = `Error Saving: ${error.message}`;
-                window.profileStatus.classList.add('text-red-600');
-            }
-        }
         
         // Call initialization right away
         window.addEventListener('load', () => {
-             // Get references to elements
-            window.profileForm = document.getElementById('profile-form');
-            window.profileNameInput = document.getElementById('profile-name');
-            window.profileAgeInput = document.getElementById('profile-age');
-            window.profileCareerInput = document.getElementById('profile-career');
-            window.profileStatus = document.getElementById('profile-status');
-
-            // Attach form handler
-            if (window.profileForm) {
-                window.profileForm.addEventListener('submit', window.saveUserProfile);
-            }
-
-            // Start authentication flow
+            // Start authentication flow. initMainApp will be called after auth is resolved.
             initializeAuthAndDatabase();
         });
 
@@ -245,24 +144,12 @@
         <!-- Main Content Wrapper -->
         <div id="content-wrapper">
 
-            <!-- Profile Section -->
-            <div class="mb-8 p-4 border border-2 border-indigo-200 dark:border-indigo-700 rounded-lg">
-                <h2 class="text-xl font-bold mb-4 text-center">Your Profile (Optional for Personalization)</h2>
-                <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">
+            <!-- User ID Display (Remains for Auth Transparency) -->
+            <div class="mb-8 p-4 border border-2 border-indigo-200 dark:border-indigo-700 rounded-lg text-center">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                     User ID: <span id="user-id-display" class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded break-all">Loading...</span> 
-                    Status: <span id="profile-status" class="font-semibold text-yellow-600">Initializing...</span>
+                    (Authentication Status)
                 </p>
-                
-                <form id="profile-form" class="space-y-4">
-                    <input type="text" id="profile-name" placeholder="First Name" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <div class="flex space-x-4">
-                        <input type="number" id="profile-age" placeholder="Age" required class="w-1/3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="text" id="profile-career" placeholder="Career Field (e.g., Software Engineer)" required class="w-2/3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-                        Save Profile & Personalize Content
-                    </button>
-                </form>
             </div>
             
             <!-- Divider -->
@@ -291,7 +178,7 @@
                 <!-- Loading State -->
                 <div id="loading-state" class="flex flex-col items-center justify-center space-y-4">
                     <div class="loader"></div>
-                    <p class="text-gray-500 dark:text-gray-400">Loading profile and generating today's wisdom...</p>
+                    <p class="text-gray-500 dark:text-gray-400">Loading today's wisdom...</p>
                 </div>
 
                 <!-- Error State -->
@@ -504,17 +391,12 @@
                     throw new Error("Invalid content type for summary generation.");
             }
             
-            let personalization = "Provide a general summary for any reader.";
-
-            if (window.userProfile && window.userProfile.age && window.userProfile.careerField) {
-                 personalization = `The user is a ${window.userProfile.age} year old person working in the field of ${window.userProfile.careerField}. Please tailor the application to address their specific life stage and career challenges.`;
-            }
+            // The personalization logic has been removed.
 
             const userQuery = `Here is a quote/lyric: "${quote.text}" - ${quote.author}.
             
-${personalization}
+Please provide a ${theme}.
             
-Please provide a ${theme}
 The response MUST follow these strict rules:
 1.  It must contain exactly two paragraphs.
 2.  Each paragraph must contain exactly two sentences.
@@ -551,7 +433,7 @@ The response MUST follow these strict rules:
             let message = error.message;
 
             if (message.includes('403 Forbidden') || message.includes('API Key Missing')) {
-                message = "The Gemini API Key is missing or invalid. Please update the API_KEY variable in the code to your valid, restricted key.";
+                message = "The Gemini API Key is missing or invalid. Please update the 'API_KEY' variable in the second script tag of index.html to your valid, restricted key.";
             } else if (message.includes('API returned an unexpected response')) {
                 message = "The AI service is unavailable or returned unexpected content. Please try again later.";
             }
@@ -595,7 +477,7 @@ The response MUST follow these strict rules:
         }
 
 
-        // --- New Feature Handlers (Updated to use currentDailyQuote) ---
+        // --- Reflection Tool Handlers ---
 
         /**
          * Handles the "Get Journal Prompt" button click.
@@ -689,7 +571,7 @@ Provide a concise, helpful answer that reflects the theme of the current tab (St
         // --- Main Execution ---
 
         /**
-         * Main function to run the app once auth and profile loading is complete.
+         * Main function to run the app once auth is complete.
          */
         window.initMainApp = async function initMainApp() {
              // 1. Register event listeners for reflection tools
@@ -748,7 +630,7 @@ Provide a concise, helpful answer that reflects the theme of the current tab (St
             }
 
             try {
-                // 4. Fetch the personalized summary from the Gemini API
+                // 4. Fetch the general summary from the Gemini API
                 const summary = await getDailySummary(currentDailyQuote, contentType);
 
                 // 5. Display the summary
