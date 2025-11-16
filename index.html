@@ -243,6 +243,15 @@
             { text: "It's not what happens to you, but how you react to it that matters.", author: "Epictetus" },
             { text: "The best revenge is to be unlike him who performed the injury.", author: "Marcus Aurelius" },
             { text: "You have power over your mind – not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+            { text: "If you are distressed by anything external, the pain is not due to the thing itself, but to your estimate of it; and this you have the power to revoke at any moment.", author: "Marcus Aurelius" },
+            { text: "A ship should not ride on a single anchor, nor life on a single hope.", author: "Epictetus" },
+            { text: "That which is not good for the beehive cannot be good for the bee.", author: "Marcus Aurelius" },
+            // --- New Stoic Quotes Added ---
+            { text: "First tell yourself what you would be; and then do what you have to do.", author: "Epictetus" },
+            { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
+            { text: "The mind that is anxious about future events is miserable.", author: "Seneca" },
+            { text: "Don't hope that your kids won't get sick. Hope that when they get sick, you'll have the courage to endure it.", author: "Epictetus" },
+            { text: "If someone is able to show me that I am making a mistake or thinking incorrectly, I will happily change.", author: "Marcus Aurelius" },
         ];
 
         const INSPIRATIONAL_QUOTES = [
@@ -251,6 +260,15 @@
             { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
             { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
             { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
+            { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas A. Edison" },
+            { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+            { text: "Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time.", author: "Thomas A. Edison" },
+            // --- New Inspirational Quotes Added ---
+            { text: "The successful warrior is the average man, with laser-like focus.", author: "Bruce Lee" },
+            { text: "Limitations live only in our minds. But if we use our imaginations, our possibilities become limitless.", author: "Jamie Paolinetti" },
+            { text: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+            { text: "If you set your goals ridiculously high and it's a failure, you will fail above everyone else's success.", author: "James Cameron" },
+            { text: "When you cease to dream, you cease to live.", author: "Malcolm Forbes" },
         ];
 
         const LYRIC_QUOTES = [
@@ -259,6 +277,15 @@
             { text: "And in the end, the love you take is equal to the love you make.", author: "The Beatles (The End)" },
             { text: "It's been a long time since I rock and rolled.", author: "Led Zeppelin (Rock and Roll)" },
             { text: "The road less traveled is the road to be free.", author: "Eddie Vedder (Rise)" },
+            { text: "The answer, my friend, is blowin' in the wind.", author: "Bob Dylan (Blowin' in the Wind)" },
+            { text: "Tears stream down your face when you lose something you can't replace.", author: "Coldplay (Fix You)" },
+            { text: "Every new beginning comes from some other beginning's end.", author: "Semisonic (Closing Time)" },
+            // --- New Lyric Quotes Added ---
+            { text: "Life is what happens to you while you're busy making other plans.", author: "John Lennon (Beautiful Boy)" },
+            { text: "There is a crack in everything, that's how the light gets in.", author: "Leonard Cohen (Anthem)" },
+            { text: "The sun shines not on us, but in us.", author: "John Denver (Sunshine on My Shoulders)" },
+            { text: "Every little thing is gonna be alright.", author: "Bob Marley (Three Little Birds)" },
+            { text: "If you try sometimes, you might find, you get what you need.", author: "The Rolling Stones (You Can't Always Get What You Want)" },
         ];
 
         // Gemini API Configuration
@@ -364,17 +391,20 @@
             let systemPrompt;
             let theme;
             
+            // New base instruction for simplicity and readability
+            const simpleLanguageInstruction = " Use clear, simple, and direct language suitable for an average reader. Avoid academic jargon or overly complex phrasing.";
+
             switch (contentType) {
                 case 'stoic':
-                    systemPrompt = "You are a philosopher skilled in Stoicism and modern psychology.";
+                    systemPrompt = "You are a philosopher skilled in Stoicism and modern psychology." + simpleLanguageInstruction;
                     theme = "summary of how this quote applies to the world today.";
                     break;
                 case 'inspiration':
-                    systemPrompt = "You are a motivational coach and success strategist.";
+                    systemPrompt = "You are a motivational coach and success strategist." + simpleLanguageInstruction;
                     theme = "analysis of how this quote can be applied to achieving personal and professional goals.";
                     break;
                 case 'lyric':
-                    systemPrompt = "You are a literary critic and music analyst.";
+                    systemPrompt = "You are a literary critic and music analyst." + simpleLanguageInstruction;
                     theme = "explanation of the deeper meaning and emotional truth of this lyric in the context of modern experience.";
                     break;
                 default:
@@ -391,7 +421,8 @@ The response MUST follow these strict rules:
 1.  It must contain exactly two paragraphs.
 2.  Each paragraph must contain exactly two sentences.
 3.  The content should focus on modern, everyday challenges.
-4.  Do not include any greeting or text other than the summary.`;
+4.  Do not include any greeting or text other than the summary.
+5.  Use simple, common vocabulary and concrete, everyday examples to illustrate the points.`;
             
             return callGeminiAPI(systemPrompt, userQuery);
         }
@@ -485,7 +516,7 @@ The response MUST follow these strict rules:
             container.classList.add('hidden');
             errorContainer.classList.add('hidden');
 
-            const systemPrompt = "You are a thoughtful and insightful journaling guide.";
+            const systemPrompt = "You are a thoughtful and insightful journaling guide. Use simple, direct language.";
             const userQuery = `Based on the content type: ${window.currentTab}, and the quote/lyric: "${currentDailyQuote.text}" by ${currentDailyQuote.author}, provide a single, short, and concise journal prompt. The prompt should be a direct question to help someone reflect on the content. Start the prompt directly, with no preamble.`;
 
             try {
@@ -536,7 +567,7 @@ The response MUST follow these strict rules:
             container.classList.add('hidden');
             errorContainer.classList.add('hidden');
 
-            const systemPrompt = "You are a source of profound wisdom related to the content type being discussed. Respond to the user's question, without using personal pronouns like 'I' or addressing the user with terms like 'my friend'.";
+            const systemPrompt = "You are a source of profound wisdom related to the content type being discussed. Respond to the user's question, without using personal pronouns like 'I' or addressing the user with terms like 'my friend'. Use clear, simple, and direct language.";
             const userQuery = `The current topic is ${window.currentTab} based on the text "${currentDailyQuote.text}" by ${currentDailyQuote.author}. The user is asking the following question:
             
 "${questionText}"
